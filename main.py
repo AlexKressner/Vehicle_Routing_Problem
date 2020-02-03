@@ -42,7 +42,7 @@ parameters['capacity'] = 200
 
 data = Data(sets, parameters)
 
-vrp = VehicleRoutingModel(data)
+vrp = VehicleRoutingModel(data,60)
 vrp.solve_model()
 print(vrp.status) #status codes 2: feasible, https://developers.google.com/optimization/cp/cp_solver
 print(vrp.objective_value)

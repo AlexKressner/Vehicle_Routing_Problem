@@ -22,8 +22,9 @@ class Data:
 
 class VehicleRoutingModel:
 
-    def __init__(self, data):
+    def __init__(self, data, max_runtime):
         self.data = data
+        self.max_runtime = max_runtime
 
     def solve_model(self):
         'define model'
@@ -68,7 +69,7 @@ class VehicleRoutingModel:
 
         'start at depot'
         for k in self.data.vehicles:
-            for l in self.data.days:
+            for t in self.data.days:
                 self.model.Add(
                     sum(y[self.data.nodes[0],j,k,t] for j in self.data.nodes[1:]) == 1
                 )
@@ -76,16 +77,16 @@ class VehicleRoutingModel:
         'netflow'
         for h in self.data.nodes:
             for k in self.data.vehicles:
-                for l in self.data.days:
+                for t in self.data.days:
                     self.model.Add(
-                        sum(y[i,h,k,l] for i in [edge[0] for edge in self.data.edges if edge[1]==h]) 
-                        - sum(y[h,j,k,l] for j in [edge[1] for edge in self.data.edges if edge[0]==h]) 
+                        sum(y[i,h,k,t] for i in [edge[0] for edge in self.data.edges if edge[1]==h]) 
+                        - sum(y[h,j,k,t] for j in [edge[1] for edge in self.data.edges if edge[0]==h]) 
                         == 0
                     )
 
         'vehicle returns to depot'
         for k in self.data.vehicles:
-            for l in self.data.days:
+            for t in self.data.days:
                 self.model.Add(
                     sum(y[i,self.data.nodes[0],k,t] for i in self.data.nodes[1:]) == 1
                 )
@@ -105,7 +106,7 @@ class VehicleRoutingModel:
 
         'solve model'
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 10.0
+        solver.parameters.max_time_in_seconds = self.max_runtime
         
         'get results'
         self.status = solver.Solve(self.model)
@@ -114,10 +115,10 @@ class VehicleRoutingModel:
         self.tours = {}
         for k in self.data.vehicles:
             for t in self.data.days:
-                self.tours[k,t] = {(i,j): sum(self.data.demand.get((i,t),0) * solver.Value(x[i,j,k,l,t]) for l in self.data.service_days[t]) for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
+                self.tours[k,t] = {(i,j): sum(self.data.demand.get((i,l),0) * solver.Value(x[i,j,k,l,t]) for l in self.data.service_days[t]) for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
 
-    def get_tour(self, k, t):
-        return self.tours[k,t]    
+    def get_tour(self, vehicle, day):
+        return self.tours[vehicle, day]    
         
 
         
