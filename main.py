@@ -1,4 +1,4 @@
-from VRP_models import Data, VehicleRoutingModel
+from VRP_models import Data, CP_VehicleRoutingModel
 
 
 'definition of sets'
@@ -6,7 +6,7 @@ sets = {}
 sets['nodes'] = [0,1,2,3,4]
 
 sets['edges'] = [(0,1),(0,2),(0,3),(0,4),
-                 (1,0),(1,2),(1,3),
+                 (1,0),(1,2),(1,3),(1,4),
                  (2,0),(2,1),(2,3),(2,4),
                  (3,0),(3,1),(3,2),(3,4),
                  (4,0),(4,1),(4,2),(4,3)
@@ -25,11 +25,11 @@ sets['service_days'] = {1: [1,2],
 parameters = {}
 parameters['travel_cost'] = 10
 parameters['stop_cost'] = 50
-parameters['distance'] = {(0,1):5, (0,2):8, (0,3):8, (0,4):10,
-                          (1,0):5 ,(1,2):2, (1,3):6,
-                          (2,0):8, (2,1):2, (2,3):5, (2,4): 11,
-                          (3,0): 8, (3,1):6, (3,2):5, (3,4):5,
-                          (4,0):10, (4,1): 11, (4,2): 11, (4,3):5
+parameters['distance'] = {(0,1):2451, (0,2):713, (0,3):1018, (0,4):1631,
+                          (1,0):2451, (1,2):1745, (1,3):1524, (1,4): 831,
+                          (2,0):713, (2,1):1745, (2,3):355, (2,4): 920,
+                          (3,0): 1018, (3,1): 1524, (3,2):355, (3,4):700,
+                          (4,0):1631, (4,1): 831, (4,2): 920, (4,3):700
                           }
 parameters['distance_max'] = 30
 parameters['demand'] = {(1,1): 50, (1,2): 60, (1,3): 25, (1,4):50, (1,5):90,
@@ -42,7 +42,7 @@ parameters['capacity'] = 200
 
 data = Data(sets, parameters)
 
-vrp = VehicleRoutingModel(data,60)
+vrp = CP_VehicleRoutingModel(data, 20.0)
 vrp.solve_model()
 print(vrp.status) #status codes 2: feasible, https://developers.google.com/optimization/cp/cp_solver
 print(vrp.objective_value)

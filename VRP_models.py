@@ -3,6 +3,8 @@
 from ortools.sat.python import cp_model
 
 
+
+
 class Data:
 
     def __init__(self, sets, parameters):
@@ -20,16 +22,17 @@ class Data:
         self.capacity = parameters['capacity']
 
 
-class VehicleRoutingModel:
+class CP_VehicleRoutingModel:
 
     def __init__(self, data, max_runtime):
         self.data = data
         self.max_runtime = max_runtime
 
-    def solve_model(self):
-        'define model'
-        self.model = cp_model.CpModel()
 
+    def solve_model(self):
+        'define cp model'
+        self.model = cp_model.CpModel()
+        
         'define routing variables'
         y = {}
         for i,j in self.data.edges:
@@ -45,21 +48,33 @@ class VehicleRoutingModel:
                     for l in self.data.service_days[t]:
                         x[i,j,k,t,l] = self.model.NewBoolVar(f'x_{i}_{j}_{k}_{t}_{l}')
 
+        'define variable for subtour elimination (Miller-Tucker-Zemlin-Formulation)'
+        u = {}
+        for i in self.data.nodes:
+            for k in self.data.vehicles:
+                for t in self.data.days:
+                    if i == 0:
+                        u[i,k,t] = self.model.NewIntVar(1, 1, f'u_{i}_{k}_{t}')
+                    else:
+                        u[i,k,t] = self.model.NewIntVar(2, int(len(self.data.nodes)-1), f'u_{i}_{k}_{t}')
+                    
+
+
         'define constraints'
         'truck capacity'
         for l in self.data.days:
             for k in self.data.vehicles:
                 self.model.Add(
                     sum(
-                        self.data.demand[i,t] * x[i,j,k,t,l]    for t in self.data.service_days[l] 
-                                                                for i in self.data.nodes[1:] 
-                                                                for j in [edge[1] for edge in self.data.edges if edge[0]==i])
+                        self.data.demand.get((i,t),0) * x[i,j,k,t,l]    for t in self.data.service_days[l] 
+                                                                        for i in self.data.nodes[1:] 
+                                                                        for j in [edge[1] for edge in self.data.edges if edge[0]==i])
                         <= self.data.capacity
                     )
 
         'Demand fulfillment'
         for t in self.data.days:
-            for i in self.data.nodes:
+            for i in self.data.nodes[1:]:
                 self.model.Add(
                     sum(x[i,j,k,t,l]    for l in self.data.service_days[t] 
                                         for k in self.data.vehicles 
@@ -75,7 +90,7 @@ class VehicleRoutingModel:
                 )
 
         'netflow'
-        for h in self.data.nodes:
+        for h in self.data.nodes[1:]:
             for k in self.data.vehicles:
                 for t in self.data.days:
                     self.model.Add(
@@ -90,6 +105,16 @@ class VehicleRoutingModel:
                 self.model.Add(
                     sum(y[i,self.data.nodes[0],k,t] for i in self.data.nodes[1:]) == 1
                 )
+
+        'subtour elimination'
+        for k in self.data.vehicles:
+            for t in self.data.days:
+                for i in self.data.nodes[1:]:
+                    for j in self.data.nodes[1:]:
+                        if i != j:
+                            self.model.Add(
+                                u[i,k,t] - u[j,k,t] + int(len(self.data.nodes)) * y[i,j,k,t] <= int(len(self.data.nodes)) - 1
+                            )
 
         'connection between loading and routing variable'
         for i,j in self.data.edges:
@@ -107,18 +132,24 @@ class VehicleRoutingModel:
         'solve model'
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.max_runtime
-        
-        'get results'
         self.status = solver.Solve(self.model)
         self.objective_value = solver.ObjectiveValue()
-        
+
+        'make tours'
         self.tours = {}
         for k in self.data.vehicles:
             for t in self.data.days:
                 self.tours[k,t] = {(i,j): sum(self.data.demand.get((i,l),0) * solver.Value(x[i,j,k,l,t]) for l in self.data.service_days[t]) for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
 
+        'make routing variables'
+        self.routing_vars = {(i,j,k,t): solver.Value(y[i,j,k,t]) for k in self.data.vehicles for t in self.data.days for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
+
     def get_tour(self, vehicle, day):
         return self.tours[vehicle, day]    
         
+    def get_routing_vars(self,vehicle,day):
+        return {(i,j) : self.routing_vars.get((i,j,vehicle,day),None) for i,j in self.data.edges}
+        
 
+        
         
