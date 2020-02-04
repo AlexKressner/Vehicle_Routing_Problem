@@ -24,9 +24,10 @@ class Data:
 
 class CP_VehicleRoutingModel:
 
-    def __init__(self, data, max_runtime):
+    def __init__(self, data, max_runtime, max_demand_shifts):
         self.data = data
         self.max_runtime = max_runtime
+        self.max_demand_shifts = max_demand_shifts
 
 
     def solve_model(self):
@@ -48,7 +49,7 @@ class CP_VehicleRoutingModel:
                     for l in self.data.service_days[t]:
                         x[i,j,k,t,l] = self.model.NewBoolVar(f'x_{i}_{j}_{k}_{t}_{l}')
 
-        'define variable for subtour elimination (Miller-Tucker-Zemlin-Formulation)'
+        'define variable for subtour elimination (Miller-Tucker-Zemlin formulation)'
         u = {}
         for i in self.data.nodes:
             for k in self.data.vehicles:
@@ -124,6 +125,16 @@ class CP_VehicleRoutingModel:
                         sum(x[i,j,k,t,l] for t in self.data.service_days[l]) <= len(self.data.service_days[l]) * y[i,j,k,l]
                     )
 
+        'maximum number of demand shifts'
+        self.model.Add(
+            sum(x[i,j,k,t,l]    for i,j in self.data.edges 
+                                for k in self.data.vehicles
+                                for l in self.data.days
+                                for t in self.data.service_days[l] if l!=t
+            )
+            <= self.max_demand_shifts 
+        )
+
         'objective function'
         self.model.Minimize(
             sum(self.data.distance[i,j] * self.data.travel_cost * y[i,j,k,t] + self.data.stop_cost * y[i,j,k,t] for i,j, in self.data.edges for k in self.data.vehicles for t in self.data.days)
@@ -135,6 +146,8 @@ class CP_VehicleRoutingModel:
         self.status = solver.Solve(self.model)
         self.objective_value = solver.ObjectiveValue()
 
+
+
         'make tours'
         self.tours = {}
         for k in self.data.vehicles:
@@ -143,6 +156,7 @@ class CP_VehicleRoutingModel:
 
         'make routing variables'
         self.routing_vars = {(i,j,k,t): solver.Value(y[i,j,k,t]) for k in self.data.vehicles for t in self.data.days for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
+
 
     def get_tour(self, vehicle, day):
         return self.tours[vehicle, day]    

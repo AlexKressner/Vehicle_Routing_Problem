@@ -40,12 +40,25 @@ parameters['demand'] = {(1,1): 50, (1,2): 60, (1,3): 25, (1,4):50, (1,5):90,
 parameters['capacity'] = 200
 
 
-data = Data(sets, parameters)
 
-vrp = CP_VehicleRoutingModel(data, 20.0)
-vrp.solve_model()
-print(vrp.status) #status codes 2: feasible, https://developers.google.com/optimization/cp/cp_solver
-print(vrp.objective_value)
+#### run experiments ####
+
+min_number_vehicles = int(sum(parameters['demand'].get((i,j),0) for i, j in sets['edges'])/parameters['capacity']) + 1
+max_number_vehicles = min_number_vehicles*2
+max_num_demand_shifts = 15
+
+result = {}
+for i in range(max_num_demand_shifts):
+    for n in range(min_number_vehicles, max_number_vehicles):
+        sets['vehicles'] = list(range(n))
+        data = Data(sets, parameters)
+        vrp = CP_VehicleRoutingModel(data, 300.0, i)
+        vrp.solve_model()
+        result[n,i] = vrp.objective_value
+
+print(result)
+
+
 
 for t in sets['days']:
     for k in sets['vehicles']:
