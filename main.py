@@ -41,10 +41,11 @@ parameters['capacity'] = 200
 
 
 
-#### run experiments ####
+#### experiments ####
 
+### this experiment takes lots of compute time ! ###
 min_number_vehicles = int(sum(parameters['demand'].get((i,j),0) for i, j in sets['edges'])/parameters['capacity']) + 1
-max_number_vehicles = min_number_vehicles*2
+max_number_vehicles = min_number_vehicles+5
 max_num_demand_shifts = 15
 
 result = {}
@@ -54,12 +55,16 @@ for i in range(max_num_demand_shifts):
         data = Data(sets, parameters)
         vrp = CP_VehicleRoutingModel(data, 300.0, i)
         vrp.solve_model()
-        result[n,i] = vrp.objective_value
+        result[n,i] = [vrp.status, vrp.objective_value]
 
 print(result)
 
-
-
+### run vrp with one parameter setting ###
+data = Data(sets, parameters)
+vrp = CP_VehicleRoutingModel(data, 60.0, 5)
+vrp.solve_model()
+print(vrp.status)
+print(vrp.objective_value)
 for t in sets['days']:
     for k in sets['vehicles']:
         print(f'Tour of vehicle {k} on day {t}')
