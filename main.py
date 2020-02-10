@@ -1,4 +1,5 @@
 from VRP_models import Data, CP_VehicleRoutingModel
+import pickle
 
 
 'definition of sets'
@@ -44,31 +45,43 @@ parameters['capacity'] = 200
 #### experiments ####
 
 ### this experiment takes lots of compute time ! ###
-min_number_vehicles = int(sum(parameters['demand'].get((i,j),0) for i, j in sets['edges'])/parameters['capacity']) + 1
+min_number_vehicles = max([int(sum(parameters['demand'].get((i,t),0) for i in sets['nodes'])/parameters['capacity']) for t in sets['days']])
+min_number_vehicles = max(min_number_vehicles, 2)
 max_number_vehicles = min_number_vehicles+2
 max_num_demand_shifts = 5
 
-result = {}
-for i in range(max_num_demand_shifts):
-    for n in range(min_number_vehicles, max_number_vehicles):
-        sets['vehicles'] = list(range(n))
-        data = Data(sets, parameters)
-        vrp = CP_VehicleRoutingModel(data, 30.0, i)
-        vrp.solve_model()
-        result[n,i] = [vrp.status, vrp.objective_value]
+#result = {}
+#for i in range(max_num_demand_shifts):
+#    for n in range(min_number_vehicles, max_number_vehicles):
+#        sets['vehicles'] = list(range(n))
+#        data = Data(sets, parameters)
+#        vrp = CP_VehicleRoutingModel(data, 30.0, i)
+#        vrp.solve_model()
+#        result[n,i] = [vrp.status, vrp.objective_value]
 
-print(result)
+#print(result)
 
 ### run vrp with one parameter setting ###
-#data = Data(sets, parameters)
-#vrp = CP_VehicleRoutingModel(data, 60.0, 5)
-#vrp.solve_model()
-#print(vrp.status)
-#print(vrp.objective_value)
-#for t in sets['days']:
-#    for k in sets['vehicles']:
-#        print(f'Tour of vehicle {k} on day {t}')
-#        print(vrp.get_tour(k,t))
-#        print()
-#        print()
+sets['vehicles'] = list(range(min_number_vehicles))
+data = Data(sets, parameters)
 
+vrp = CP_VehicleRoutingModel(data, 30.0, 0)
+vrp.solve_model()
+
+print(vrp.status)
+print()
+print()
+print(vrp.objective_value)
+print()
+print()
+for t in sets['days']:
+    for k in sets['vehicles']:
+        print(f'Tour of vehicle {k} on day {t}')
+        print(vrp.get_tour(k,t))
+        print()
+        print()
+
+
+output = open('tours.pkl', 'wb')
+pickle.dump(vrp.get_tours(), output)
+output.close()

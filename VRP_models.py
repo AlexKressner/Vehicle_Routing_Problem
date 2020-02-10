@@ -157,7 +157,9 @@ class CP_VehicleRoutingModel:
         'make routing variables'
         self.routing_vars = {(i,j,k,t): solver.Value(y[i,j,k,t]) for k in self.data.vehicles for t in self.data.days for i,j in self.data.edges if solver.Value(y[i,j,k,t]) == 1}
 
-
+    def get_tours(self):
+        return self.tours
+        
     def get_tour(self, vehicle, day):
         return self.tours[vehicle, day]    
         
