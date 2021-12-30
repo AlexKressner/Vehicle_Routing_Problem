@@ -1,0 +1,4 @@
+.dockerignore
+Dockerfile
+CP_based_Column_Generation.pdf
+env/
