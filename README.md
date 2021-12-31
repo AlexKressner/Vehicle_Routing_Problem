@@ -17,6 +17,6 @@ Make sure [Docker](https://www.docker.com) is installed.
 3. Build and launch with docker
   ```sh
     docker build -t vrp:latest .
-    docker run -p 8888:8888  vrp 
+    docker run -p 8888:8888 vrp 
   ```
-4. Copy and paste URL from terminal in browser to open the notebook: ``http://127.0.0.1:8888/...``
+4. Copy and paste URL from terminal in browser to open the notebook (``http://127.0.0.1:8888/...``)
