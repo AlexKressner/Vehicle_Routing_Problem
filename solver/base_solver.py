@@ -5,6 +5,19 @@ from models.solver_model import SolverSetting
 
 
 class Solver:
+    """
+    Solver object that takes a problem instance as input, creates and solves a capacitated vehicle routing problem with time
+    windows. Objective of the optimization are hierarchical: 1) Minimize number of vehicles 2) Minimize total distance.
+    Distance is Euclidean, and the value of travel time is equal to the value of distance between two nodes.
+
+    Parameters
+    ----------
+    data : ProblemInstance
+        Problem data according to ProblemInstance model.
+    time_precision_scaler : int
+        Variable defining the precision of travel and service times, e.g. 100 means precision of two decimals.
+    """
+
     def __init__(self, data: ProblemInstance, time_precision_scaler: int):
         self.data = data
         self.time_precision_scaler = time_precision_scaler
@@ -13,6 +26,9 @@ class Solver:
         self.solution = None
 
     def create_model(self):
+        """
+        Create vehicle routing model for Solomon instance.
+        """
         # Create the routing index manager, i.e. number of nodes, vehicles and depot
         self.manager = pywrapcp.RoutingIndexManager(
             len(self.data["time_matrix"]), self.data["num_vehicles"], self.data["depot"]
@@ -93,6 +109,15 @@ class Solver:
             )
 
     def solve_model(self, settings: SolverSetting):
+        """
+        Solver model with solver settings.
+
+        Parameters
+        ----------
+        settings : SolverSetting
+            Solver settings according to SolverSetting model.
+        """
+
         # Setting first solution heuristic.
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.first_solution_strategy = (
@@ -107,7 +132,9 @@ class Solver:
         self.solution = self.routing.SolveWithParameters(search_parameters)
 
     def print_solution(self):
-        """Prints solution on console."""
+        """
+        Print solution to console.
+        """
         print(f"Solution status: {self.routing.status()}\n")
         if self.routing.status() == 1:
             print(

@@ -7,6 +7,15 @@ from models.data_model import ProblemInstance
 
 
 def load_instance(problem_path: str, time_precision_scaler: int) -> ProblemInstance:
+    """
+    Load instance of Solomon benchmark with defined precision scaler.
+
+    Parameters
+    ----------
+    time_precision_scaler : int
+        Variable defining the precision of travel and service times, e.g. 100 means precision of two decimals.
+    """
+
     data = {}
     data["depot"] = 0
     df = pd.read_csv(
